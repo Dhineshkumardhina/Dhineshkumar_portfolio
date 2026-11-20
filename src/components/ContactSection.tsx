@@ -3,7 +3,6 @@
 import { useState, type FormEvent, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowUpRight,
   Check,
   Copy,
   Github,
@@ -112,10 +111,6 @@ export default function ContactSection() {
       setSending(false);
     }
   };
-
-  const mailtoHref = `mailto:${portfolio.email}?subject=${encodeURIComponent(
-    `[${selectedTopic}] Portfolio inquiry from ${name || "Visitor"}`
-  )}&body=${encodeURIComponent(`${message}\n\n— ${name} (${email})`)}`;
 
   const githubSocial = portfolio.socials.find((s) => s.icon === "github");
   const linkedinSocial = portfolio.socials.find((s) => s.icon === "linkedin");
@@ -406,8 +401,8 @@ export default function ContactSection() {
                     <>
                       Thanks for reaching out about{" "}
                       <strong className="text-black">{selectedTopic}</strong>.
-                      Your note has been saved — you can also open your mail app
-                      below.
+                      Your message has been received — I&apos;ll get back to you
+                      soon.
                     </>
                   )}
                 </p>
@@ -425,13 +420,6 @@ export default function ContactSection() {
                   >
                     Send another message
                   </button>
-                  <a
-                    href={mailtoHref}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-black/15 px-5 py-2.5 text-xs font-semibold text-neutral-700 transition-colors hover:border-black hover:text-black"
-                  >
-                    <span>Open in Mail App</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </a>
                 </div>
               </motion.div>
             ) : (
