@@ -8,9 +8,11 @@ import {
   Check,
   Code2,
   Download,
+  ExternalLink,
   FolderKanban,
   LayoutDashboard,
   LogOut,
+  Mail,
   MessageSquare,
   Plus,
   RotateCcw,
@@ -25,8 +27,10 @@ import type {
   ExperienceItem,
   SocialLink,
 } from "@/data/portfolio";
+import type { ContactInquiry, MailConfigStatus } from "@/lib/mail-server";
 
 type TabId =
+  | "mail"
   | "hero"
   | "about"
   | "skills"
@@ -35,6 +39,7 @@ type TabId =
   | "contact";
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "mail", label: "Gmail & Inbox", icon: Mail },
   { id: "hero", label: "Hero & Brand", icon: LayoutDashboard },
   { id: "about", label: "About & Marquee", icon: User },
   { id: "skills", label: "Tech Stack", icon: Code2 },
@@ -50,12 +55,16 @@ const labelCls =
 
 export default function AdminDashboard({
   initialData,
+  initialMailConfig,
+  initialInquiries,
 }: {
   initialData: PortfolioData;
+  initialMailConfig: MailConfigStatus;
+  initialInquiries: ContactInquiry[];
 }) {
   const router = useRouter();
   const [data, setData] = useState<PortfolioData>(initialData);
-  const [activeTab, setActiveTab] = useState<TabId>("hero");
+  const [activeTab, setActiveTab] = useState<TabId>("mail");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -66,6 +75,21 @@ export default function AdminDashboard({
   const [newMarquee, setNewMarquee] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Direct Gmail Delivery + Contact Inquiries Inbox state
+  const [mailConfig, setMailConfig] = useState<MailConfigStatus>(initialMailConfig);
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>(initialInquiries);
+  const [receivingEmail, setReceivingEmail] = useState(
+    initialMailConfig.receivingEmail || initialData.email
+  );
+  const [gmailAppPassword, setGmailAppPassword] = useState("");
+  const [web3formsKey, setWeb3formsKey] = useState("");
+  const [mailSaving, setMailSaving] = useState(false);
+  const [mailRefreshing, setMailRefreshing] = useState(false);
+  const [mailTestResult, setMailTestResult] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
 
   const showToast = (type: "ok" | "err", text: string) => {
     setToast({ type, text });
@@ -238,6 +262,103 @@ export default function AdminDashboard({
     }));
   };
 
+  const handleSaveMailConfig = async (options: {
+    sendTest?: boolean;
+    clearGmailPassword?: boolean;
+    clearWeb3formsKey?: boolean;
+  }) => {
+    setMailSaving(true);
+    setMailTestResult(null);
+    try {
+      const res = await fetch("/api/admin/mail", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receivingEmail: receivingEmail.trim(),
+          gmailAppPassword: gmailAppPassword.trim() || undefined,
+          web3formsKey: web3formsKey.trim() || undefined,
+          clearGmailPassword: options.clearGmailPassword,
+          clearWeb3formsKey: options.clearWeb3formsKey,
+          sendTest: options.sendTest,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        config?: MailConfigStatus;
+        testResult?: {
+          deliveredVia: "gmail" | "web3forms" | "inbox-only";
+          error?: string;
+        } | null;
+        error?: string;
+      };
+      if (!res.ok || !json.ok || !json.config) {
+        throw new Error(json.error || "Failed to save email relay settings.");
+      }
+
+      setMailConfig(json.config);
+      setReceivingEmail(json.config.receivingEmail);
+      setGmailAppPassword("");
+      setWeb3formsKey("");
+
+      if (options.sendTest && json.testResult) {
+        if (json.testResult.deliveredVia !== "inbox-only") {
+          const providerLabel =
+            json.testResult.deliveredVia === "gmail" ? "Gmail SMTP" : "Web3Forms";
+          const msg = `Test email delivered via ${providerLabel} to ${json.config.receivingEmail}!`;
+          setMailTestResult({ ok: true, text: msg });
+          showToast("ok", msg);
+        } else {
+          const msg =
+            json.testResult.error ||
+            "Settings saved, but no email relay delivered the test email.";
+          setMailTestResult({ ok: false, text: msg });
+          showToast("err", "Settings saved — test email could not be delivered.");
+        }
+      } else {
+        showToast("ok", "Direct Gmail delivery settings saved.");
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to save email relay settings.";
+      setMailTestResult({ ok: false, text: msg });
+      showToast("err", msg);
+    } finally {
+      setMailSaving(false);
+    }
+  };
+
+  const handleRefreshInbox = async () => {
+    setMailRefreshing(true);
+    try {
+      const res = await fetch("/api/admin/mail", { cache: "no-store" });
+      if (!res.ok) throw new Error("Could not refresh inbox");
+      const json = (await res.json()) as {
+        config: MailConfigStatus;
+        inquiries: ContactInquiry[];
+      };
+      setMailConfig(json.config);
+      setInquiries(json.inquiries);
+    } catch {
+      showToast("err", "Failed to refresh inbox.");
+    } finally {
+      setMailRefreshing(false);
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/mail?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      const json = (await res.json()) as { inquiries: ContactInquiry[] };
+      setInquiries(json.inquiries);
+      showToast("ok", "Inquiry removed.");
+    } catch {
+      showToast("err", "Could not delete inquiry.");
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#F7F7F7] text-[#0A0A0A]">
       {/* ================= STICKY GLASS ADMIN HEADER ================= */}
@@ -374,14 +495,29 @@ export default function AdminDashboard({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex w-full items-center justify-between gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-semibold transition-all cursor-pointer ${
                     active
                       ? "bg-[#0A0A0A] text-white shadow-sm"
                       : "text-neutral-600 hover:bg-black/[0.05] hover:text-black"
                   }`}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{tab.label}</span>
+                  <span className="flex items-center gap-2.5">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{tab.label}</span>
+                  </span>
+                  {tab.id === "mail" && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-bold ${
+                        active
+                          ? "bg-white/20 text-white"
+                          : mailConfig.connected
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-black/[0.07] text-neutral-700"
+                      }`}
+                    >
+                      {inquiries.length}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -390,6 +526,342 @@ export default function AdminDashboard({
 
         {/* Right Editor Canvas */}
         <div className="space-y-6 lg:col-span-9">
+          {/* ==================== TAB 0: DIRECT GMAIL DELIVERY & INBOX ==================== */}
+          {activeTab === "mail" && (
+            <>
+              {/* Direct Gmail Delivery Settings Card */}
+              <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-xs">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-[#FAFAFA] text-[#0A0A0A]">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-[family-name:var(--font-display)] text-base font-bold text-[#0A0A0A] sm:text-lg">
+                        Direct Gmail Delivery —{" "}
+                        <span className="break-all">
+                          {receivingEmail || data.email}
+                        </span>
+                      </h2>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        Every contact form inquiry is delivered straight to your
+                        Receiving Contact Email below.
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
+                      mailConfig.connected
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        mailConfig.connected
+                          ? "bg-emerald-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    {mailConfig.connected
+                      ? `Email Relay Connected (${
+                          mailConfig.activeProvider === "gmail"
+                            ? "Gmail"
+                            : "Web3Forms"
+                        })`
+                      : "Not Configured — Inbox Only"}
+                  </span>
+                </div>
+
+                {/* 3-Column Credential Row */}
+                <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  {/* Column 1: Receiving Contact Email */}
+                  <div>
+                    <label
+                      htmlFor="mail-receiving-email"
+                      className="mb-1.5 block text-xs font-semibold text-neutral-800"
+                    >
+                      Receiving Contact Email
+                    </label>
+                    <input
+                      id="mail-receiving-email"
+                      type="email"
+                      value={receivingEmail}
+                      onChange={(e) => setReceivingEmail(e.target.value)}
+                      placeholder="dhineshkumardhina18@gmail.com"
+                      className={inputCls}
+                    />
+                  </div>
+
+                  {/* Column 2: Option 1 — Gmail App Password */}
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <label
+                        htmlFor="mail-gmail-password"
+                        className="text-xs font-semibold text-neutral-800"
+                      >
+                        Option 1: Gmail App Password
+                      </label>
+                      <a
+                        href="https://myaccount.google.com/apppasswords"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0A0A0A] underline decoration-black/25 underline-offset-4 hover:decoration-black"
+                      >
+                        <span>Get 16-char code</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                    <input
+                      id="mail-gmail-password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={gmailAppPassword}
+                      onChange={(e) => setGmailAppPassword(e.target.value)}
+                      placeholder={
+                        mailConfig.hasGmailPassword
+                          ? "•••••••••••••••• (Saved securely)"
+                          : "xxxx xxxx xxxx xxxx"
+                      }
+                      className={inputCls}
+                    />
+                    {mailConfig.hasGmailPassword && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleSaveMailConfig({
+                            clearGmailPassword: true,
+                          })
+                        }
+                        disabled={mailSaving}
+                        className="mt-1 text-[11px] font-medium text-neutral-400 hover:text-red-600 cursor-pointer"
+                      >
+                        Clear saved Gmail password
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Column 3: Option 2 — Web3Forms Key */}
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <label
+                        htmlFor="mail-web3forms-key"
+                        className="text-xs font-semibold text-neutral-800"
+                      >
+                        Option 2: Web3Forms Key
+                      </label>
+                      <a
+                        href="https://web3forms.com/#start"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0A0A0A] underline decoration-black/25 underline-offset-4 hover:decoration-black"
+                      >
+                        <span>Get free key</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                    <input
+                      id="mail-web3forms-key"
+                      type="text"
+                      value={web3formsKey}
+                      onChange={(e) => setWeb3formsKey(e.target.value)}
+                      placeholder={
+                        mailConfig.hasWeb3formsKey
+                          ? "•••••••••••• (Saved securely)"
+                          : "e.g. a1b2c3d4-e5f6-..."
+                      }
+                      className={inputCls}
+                    />
+                    {mailConfig.hasWeb3formsKey && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleSaveMailConfig({ clearWeb3formsKey: true })
+                        }
+                        disabled={mailSaving}
+                        className="mt-1 text-[11px] font-medium text-neutral-400 hover:text-red-600 cursor-pointer"
+                      >
+                        Clear saved Web3Forms key
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer Action Row */}
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.07] pt-4">
+                  <p className="max-w-lg text-[11px] leading-relaxed text-neutral-500">
+                    Works with either a 16-char{" "}
+                    <strong className="text-neutral-800">
+                      Gmail App Password
+                    </strong>{" "}
+                    or a free{" "}
+                    <strong className="text-neutral-800">Web3Forms Key</strong>{" "}
+                    (recommended on Cloudflare Workers for instant HTTPS
+                    delivery). Add both for automatic fallback.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={mailSaving}
+                      onClick={() =>
+                        void handleSaveMailConfig({ sendTest: false })
+                      }
+                      className="rounded-xl border border-black/15 bg-white px-4 py-2.5 text-xs font-semibold text-neutral-800 transition-colors hover:border-black hover:text-black disabled:opacity-50 cursor-pointer"
+                    >
+                      Save Only
+                    </button>
+                    <button
+                      type="button"
+                      disabled={mailSaving}
+                      onClick={() =>
+                        void handleSaveMailConfig({ sendTest: true })
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#0A0A0A] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      <span>
+                        {mailSaving
+                          ? "Sending test..."
+                          : "Save & Send Test Email"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {mailTestResult && (
+                  <div
+                    className={`mt-4 rounded-xl border px-4 py-3 text-xs font-medium ${
+                      mailTestResult.ok
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-amber-200 bg-amber-50 text-amber-900"
+                    }`}
+                  >
+                    {mailTestResult.text}
+                  </div>
+                )}
+              </section>
+
+              {/* Contact Inquiries Inbox Card */}
+              <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.08] pb-4">
+                  <div>
+                    <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-[#0A0A0A]">
+                      Contact Inquiries ({inquiries.length})
+                    </h2>
+                    <p className="mt-0.5 text-xs text-neutral-500">
+                      Every submission from the Contact section is logged here
+                      and forwarded to your Gmail.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRefreshInbox}
+                    disabled={mailRefreshing}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-700 transition-colors hover:border-black hover:text-black disabled:opacity-50 cursor-pointer"
+                  >
+                    <RotateCcw
+                      className={`h-3.5 w-3.5 ${
+                        mailRefreshing ? "animate-spin" : ""
+                      }`}
+                    />
+                    <span>{mailRefreshing ? "Refreshing..." : "Refresh"}</span>
+                  </button>
+                </div>
+
+                {inquiries.length === 0 ? (
+                  <div className="mt-5 rounded-xl border border-dashed border-black/15 bg-[#FAFAFA] px-6 py-10 text-center">
+                    <Mail className="mx-auto h-6 w-6 text-neutral-400" />
+                    <p className="mt-2.5 text-sm font-semibold text-neutral-800">
+                      No inquiries yet
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      When visitors submit the Contact form on your portfolio,
+                      their message will show up here and be sent to{" "}
+                      {receivingEmail || data.email}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-5 space-y-3.5">
+                    {inquiries.map((inq) => (
+                      <div
+                        key={inq.id}
+                        className="rounded-xl border border-black/10 bg-[#FAFAFA] p-4 transition-colors hover:border-black/20"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-[family-name:var(--font-display)] text-sm font-bold text-black">
+                                {inq.name}
+                              </span>
+                              <a
+                                href={`mailto:${inq.email}`}
+                                className="text-xs font-medium text-neutral-600 underline decoration-black/20 underline-offset-4 hover:text-black"
+                              >
+                                {inq.email}
+                              </a>
+                              <span className="rounded-full border border-black/12 bg-white px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-neutral-700">
+                                {inq.topic}
+                              </span>
+                            </div>
+                            <p className="mt-1 font-[family-name:var(--font-mono)] text-[10px] text-neutral-400">
+                              {new Date(inq.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold ${
+                                inq.deliveredVia === "gmail" ||
+                                inq.deliveredVia === "web3forms"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-neutral-200 text-neutral-700"
+                              }`}
+                            >
+                              {inq.deliveredVia === "gmail"
+                                ? "Sent via Gmail"
+                                : inq.deliveredVia === "web3forms"
+                                  ? "Sent via Web3Forms"
+                                  : "Inbox Only"}
+                            </span>
+                            <a
+                              href={`mailto:${inq.email}?subject=${encodeURIComponent(
+                                `Re: [${inq.topic}] Inquiry via Portfolio`
+                              )}`}
+                              className="inline-flex items-center gap-1 rounded-full bg-[#0A0A0A] px-3 py-1 text-[11px] font-semibold text-white hover:bg-neutral-800"
+                            >
+                              <span>Reply</span>
+                              <ArrowUpRight className="h-3 w-3" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteInquiry(inq.id)}
+                              title="Delete inquiry"
+                              className="rounded-full border border-black/10 bg-white p-1.5 text-neutral-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="mt-3 whitespace-pre-wrap rounded-lg border border-black/[0.06] bg-white px-3.5 py-3 text-sm leading-relaxed text-neutral-800">
+                          {inq.message}
+                        </p>
+
+                        {inq.deliveryNote &&
+                          inq.deliveredVia === "inbox-only" && (
+                            <p className="mt-2 font-[family-name:var(--font-mono)] text-[10px] text-amber-700">
+                              Delivery note: {inq.deliveryNote}
+                            </p>
+                          )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
           {/* ==================== TAB 1: HERO & BRAND ==================== */}
           {activeTab === "hero" && (
             <>

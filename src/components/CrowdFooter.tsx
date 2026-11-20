@@ -489,6 +489,8 @@ export default function CrowdFooter() {
             src="/crowd/center-dhinesh.png"
             alt={`${portfolio.firstName} standing in the crowd`}
             draggable={false}
+            loading="lazy"
+            decoding="async"
             className="animate-hero-breathe h-[250px] w-auto object-contain sm:h-[305px] lg:h-[340px]"
           />
         </motion.div>
@@ -512,7 +514,8 @@ export default function CrowdFooter() {
               src={walker.sprite.src}
               alt=""
               draggable={false}
-              loading="eager"
+              loading="lazy"
+              decoding="async"
               className="h-full w-auto max-w-none object-contain"
             />
           </div>

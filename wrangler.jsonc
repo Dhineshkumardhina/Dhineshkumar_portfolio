@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dhineshkumar-portfolio",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-05-05",
+  "compatibility_date": "2025-11-01",
   "compatibility_flags": [
     "nodejs_compat",
     "global_fetch_strictly_public"
@@ -16,14 +16,11 @@
       "binding": "WORKER_SELF_REFERENCE",
       "service": "dhineshkumar-portfolio"
     }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "PORTFOLIO_KV",
+      "id": "62ed2921760a41f8a817a75761e269cf"
+    }
   ]
-  // To enable live persistent /dhina Admin CMS edits & photo uploads on Cloudflare:
-  // 1. Run: npx wrangler kv namespace create PORTFOLIO_KV
-  // 2. Uncomment the block below and paste your KV namespace id:
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "PORTFOLIO_KV",
-  //     "id": "<YOUR_KV_NAMESPACE_ID>"
-  //   }
-  // ]
 }

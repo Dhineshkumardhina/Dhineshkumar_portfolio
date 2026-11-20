@@ -103,8 +103,20 @@ function HeroFieldCanvas() {
     document.addEventListener("mouseleave", onPointerLeave);
 
     let time = 0;
+    let inView = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+      },
+      { rootMargin: "150px" }
+    );
+    observer.observe(canvas);
 
     const render = () => {
+      if (!inView) {
+        rafId = requestAnimationFrame(render);
+        return;
+      }
       time += 0.016;
       ctx.clearRect(0, 0, width, height);
 
@@ -181,6 +193,7 @@ function HeroFieldCanvas() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      observer.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", onPointerMove);
       document.removeEventListener("mouseleave", onPointerLeave);
@@ -369,6 +382,8 @@ function RotatablePortraitCard({
               src={portfolio.portraitSrc}
               alt={portfolio.fullName}
               draggable={false}
+              fetchPriority="high"
+              decoding="async"
               className="h-full w-full object-cover object-top grayscale contrast-110"
             />
           </motion.div>
@@ -755,18 +770,14 @@ export default function HeroAboutStage() {
         >
           <HeroFieldCanvas />
 
-          {/* Ultra-soft breathing pearl-silver ambient light orbs (makes gallery white feel luminous) */}
-          <motion.div
+          {/* Lightweight static CSS ambient pearl gradients (zero GPU blur-animation cost) */}
+          <div
             aria-hidden="true"
-            animate={{ x: [-28, 32, -28], y: [-18, 22, -18], scale: [1, 1.08, 1] }}
-            transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -top-32 left-1/4 h-[440px] w-[440px] rounded-full bg-neutral-200/55 blur-[110px]"
-          />
-          <motion.div
-            aria-hidden="true"
-            animate={{ x: [26, -30, 26], y: [20, -24, 20], scale: [1.05, 0.96, 1.05] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute right-1/5 bottom-0 h-[400px] w-[400px] rounded-full bg-neutral-300/40 blur-[120px]"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(600px circle at 25% 15%, rgba(0,0,0,0.035), transparent 65%), radial-gradient(540px circle at 80% 85%, rgba(0,0,0,0.03), transparent 65%)",
+            }}
           />
 
           {/* Center Display Headline + Clean Intro Line */}

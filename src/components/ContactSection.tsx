@@ -44,6 +44,11 @@ export default function ContactSection() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [deliveredVia, setDeliveredVia] = useState<
+    "gmail" | "web3forms" | "inbox-only" | null
+  >(null);
 
   const handleCopyEmail = async () => {
     try {
@@ -55,10 +60,44 @@ export default function ContactSection() {
     }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !message.trim()) return;
-    setSubmitted(true);
+    if (!name.trim() || !email.trim() || !message.trim() || sending) return;
+
+    setSending(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          topic: selectedTopic,
+          message: message.trim(),
+        }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        deliveredVia?: "gmail" | "web3forms" | "inbox-only";
+        error?: string;
+      };
+      if (!res.ok || !json.ok) {
+        throw new Error(
+          json.error || "Could not send message. Please try emailing directly."
+        );
+      }
+      setDeliveredVia(json.deliveredVia ?? "inbox-only");
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Network error — please try emailing directly."
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   const mailtoHref = `mailto:${portfolio.email}?subject=${encodeURIComponent(
@@ -261,33 +300,78 @@ export default function ContactSection() {
                   <Check className="h-5 w-5" />
                 </div>
                 <h3 className="mt-5 font-[family-name:var(--font-display)] text-2xl font-bold text-black">
-                  Message ready, {name}.
+                  {deliveredVia === "gmail" || deliveredVia === "web3forms"
+                    ? `Message sent, ${name}.`
+                    : `Message received, ${name}.`}
                 </h3>
                 <p className="mt-2 max-w-md text-sm leading-relaxed text-neutral-600">
-                  Topic tagged as <strong className="text-black">{selectedTopic}</strong>. Open your email client below to send directly to {portfolio.firstName}.
+                  {deliveredVia === "gmail" || deliveredVia === "web3forms" ? (
+                    <>
+                      Topic tagged as{" "}
+                      <strong className="text-black">{selectedTopic}</strong>.
+                      Your message has been delivered directly to{" "}
+                      {portfolio.firstName}&apos;s Gmail inbox — expect a reply
+                      soon.
+                    </>
+                  ) : (
+                    <>
+                      Topic tagged as{" "}
+                      <strong className="text-black">{selectedTopic}</strong>.
+                      Your note is saved in {portfolio.firstName}&apos;s inbox.
+                      You can also send a direct copy via your mail app below.
+                    </>
+                  )}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Magnetic strength={0.18}>
-                    <a
-                      href={mailtoHref}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
-                    >
-                      <span>Open in Mail App</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </a>
-                  </Magnetic>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSubmitted(false);
-                      setName("");
-                      setEmail("");
-                      setMessage("");
-                    }}
-                    className="rounded-full border border-black/15 px-5 py-2.5 text-xs font-semibold text-neutral-700 transition-colors hover:border-black hover:text-black cursor-pointer"
-                  >
-                    Write another note
-                  </button>
+                  {deliveredVia === "gmail" || deliveredVia === "web3forms" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitted(false);
+                          setDeliveredVia(null);
+                          setName("");
+                          setEmail("");
+                          setMessage("");
+                        }}
+                        className="rounded-full bg-[#0A0A0A] px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 cursor-pointer"
+                      >
+                        Write another note
+                      </button>
+                      <a
+                        href={mailtoHref}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-black/15 px-5 py-2.5 text-xs font-semibold text-neutral-700 transition-colors hover:border-black hover:text-black"
+                      >
+                        <span>Open in Mail App</span>
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <Magnetic strength={0.18}>
+                        <a
+                          href={mailtoHref}
+                          className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+                        >
+                          <span>Open in Mail App</span>
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </a>
+                      </Magnetic>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitted(false);
+                          setDeliveredVia(null);
+                          setName("");
+                          setEmail("");
+                          setMessage("");
+                        }}
+                        className="rounded-full border border-black/15 px-5 py-2.5 text-xs font-semibold text-neutral-700 transition-colors hover:border-black hover:text-black cursor-pointer"
+                      >
+                        Write another note
+                      </button>
+                    </>
+                  )}
                 </div>
               </motion.div>
             ) : (
@@ -390,13 +474,22 @@ export default function ContactSection() {
                   />
                 </div>
 
+                {submitError && (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-medium text-red-700">
+                    {submitError}
+                  </p>
+                )}
+
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
                   <Magnetic strength={0.18}>
                     <button
                       type="submit"
-                      className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#0A0A0A] px-6 py-3 text-xs font-semibold text-white shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition-all hover:bg-neutral-800 active:scale-95 cursor-pointer"
+                      disabled={sending}
+                      className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#0A0A0A] px-6 py-3 text-xs font-semibold text-white shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition-all hover:bg-neutral-800 active:scale-95 disabled:opacity-60 cursor-pointer"
                     >
-                      <span className="relative z-10">Send Message</span>
+                      <span className="relative z-10">
+                        {sending ? "Sending..." : "Send Message"}
+                      </span>
                       <ArrowUpRight className="relative z-10 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                       <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
                     </button>

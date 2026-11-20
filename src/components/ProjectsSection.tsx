@@ -313,13 +313,21 @@ export default function ProjectsSection() {
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-1.5 self-start rounded-full border border-black/15 bg-white px-3.5 py-1.5 font-[family-name:var(--font-mono)] text-xs font-medium text-black transition-all hover:bg-[#0A0A0A] hover:text-white sm:self-end"
           >
-            <span>01–0{portfolio.projects.length} ON GITHUB</span>
+            <span>
+              01–{String(portfolio.projects.length).padStart(2, "0")} ON GITHUB
+            </span>
             <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </a>
         </div>
 
-        {/* 4-Column Interactive 3D Black Folder Cards on White Stage */}
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Interactive 3D Black Folder Cards (Balanced 3-Col for 6 projects, 4-Col for 4/8) */}
+        <div
+          className={`mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 ${
+            portfolio.projects.length === 4 || portfolio.projects.length === 8
+              ? "lg:grid-cols-4"
+              : "lg:grid-cols-3"
+          }`}
+        >
           {portfolio.projects.map((project, idx) => (
             <ProjectFolderCard
               key={project.id}

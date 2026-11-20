@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { readPortfolioData } from "@/lib/portfolio-server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { getMailConfigStatus, readInquiries } from "@/lib/mail-server";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminLoginGate from "@/components/AdminLoginGate";
 
@@ -17,6 +18,17 @@ export default async function DhinaAdminPage() {
     return <AdminLoginGate />;
   }
 
-  const initialData = await readPortfolioData();
-  return <AdminDashboard initialData={initialData} />;
+  const [initialData, initialMailConfig, initialInquiries] = await Promise.all([
+    readPortfolioData(),
+    getMailConfigStatus(),
+    readInquiries(),
+  ]);
+
+  return (
+    <AdminDashboard
+      initialData={initialData}
+      initialMailConfig={initialMailConfig}
+      initialInquiries={initialInquiries}
+    />
+  );
 }
