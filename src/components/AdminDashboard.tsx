@@ -72,6 +72,7 @@ export default function AdminDashboard({
     null
   );
   const [newSkillInputs, setNewSkillInputs] = useState<Record<number, string>>({});
+  const [newProjectTech, setNewProjectTech] = useState<Record<number, string>>({});
   const [newMarquee, setNewMarquee] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -1681,33 +1682,61 @@ export default function AdminDashboard({
                     key={proj.id || idx}
                     className="rounded-2xl border border-black/12 bg-[#FAFAFA] p-5 space-y-4"
                   >
-                    <div className="flex items-center justify-between border-b border-black/10 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="rounded-md bg-[#0A0A0A] px-2 py-0.5 font-[family-name:var(--font-mono)] text-xs font-bold text-white">
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-black/10 pb-4">
+                      <div className="flex min-w-[220px] flex-1 items-end gap-2.5">
+                        <span className="mb-1 shrink-0 rounded-md bg-[#0A0A0A] px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-xs font-bold text-white">
                           {proj.index}
                         </span>
-                        <h3 className="font-[family-name:var(--font-display)] text-base font-bold">
-                          {proj.title}
-                        </h3>
+                        <div className="min-w-0 flex-1">
+                          <label className={labelCls}>Project Name</label>
+                          <input
+                            type="text"
+                            suppressHydrationWarning
+                            className="w-full rounded-xl border border-black/15 bg-white px-3.5 py-2 font-[family-name:var(--font-display)] text-base font-bold text-black placeholder:text-neutral-400 focus:border-black focus:outline-none transition-colors"
+                            value={proj.title}
+                            placeholder="Enter project name..."
+                            onChange={(e) =>
+                              update((p) => {
+                                const next = [...p.projects];
+                                next[idx] = { ...next[idx], title: e.target.value };
+                                return { ...p, projects: next };
+                              })
+                            }
+                          />
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          update((p) => ({
-                            ...p,
-                            projects: p.projects.filter((_, i) => i !== idx),
-                          }))
-                        }
-                        className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-red-600 cursor-pointer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {dirty && (
+                          <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#0A0A0A] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50 cursor-pointer"
+                          >
+                            <Save className="h-3 w-3" />
+                            <span>{saving ? "Saving..." : "Save"}</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            update((p) => ({
+                              ...p,
+                              projects: p.projects.filter((_, i) => i !== idx),
+                            }))
+                          }
+                          className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                       <div>
                         <label className={labelCls}>Index (01..)</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.index}
                           onChange={(e) =>
@@ -1720,22 +1749,9 @@ export default function AdminDashboard({
                         />
                       </div>
                       <div>
-                        <label className={labelCls}>Title</label>
-                        <input
-                          className={inputCls}
-                          value={proj.title}
-                          onChange={(e) =>
-                            update((p) => {
-                              const next = [...p.projects];
-                              next[idx] = { ...next[idx], title: e.target.value };
-                              return { ...p, projects: next };
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
                         <label className={labelCls}>Category</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.category}
                           onChange={(e) =>
@@ -1751,8 +1767,24 @@ export default function AdminDashboard({
                         />
                       </div>
                       <div>
+                        <label className={labelCls}>Year</label>
+                        <input
+                          suppressHydrationWarning
+                          className={inputCls}
+                          value={proj.year}
+                          onChange={(e) =>
+                            update((p) => {
+                              const next = [...p.projects];
+                              next[idx] = { ...next[idx], year: e.target.value };
+                              return { ...p, projects: next };
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
                         <label className={labelCls}>Short Tagline</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.shortTagline}
                           onChange={(e) =>
@@ -1768,22 +1800,9 @@ export default function AdminDashboard({
                         />
                       </div>
                       <div>
-                        <label className={labelCls}>Year</label>
-                        <input
-                          className={inputCls}
-                          value={proj.year}
-                          onChange={(e) =>
-                            update((p) => {
-                              const next = [...p.projects];
-                              next[idx] = { ...next[idx], year: e.target.value };
-                              return { ...p, projects: next };
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
                         <label className={labelCls}>Role</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.role}
                           onChange={(e) =>
@@ -1798,6 +1817,7 @@ export default function AdminDashboard({
                       <div>
                         <label className={labelCls}>CTA Label</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.ctaLabel}
                           onChange={(e) =>
@@ -1815,6 +1835,7 @@ export default function AdminDashboard({
                       <div>
                         <label className={labelCls}>GitHub URL</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.githubUrl}
                           onChange={(e) =>
@@ -1832,6 +1853,7 @@ export default function AdminDashboard({
                       <div>
                         <label className={labelCls}>Live URL</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.liveUrl}
                           onChange={(e) =>
@@ -1843,50 +1865,10 @@ export default function AdminDashboard({
                           }
                         />
                       </div>
-                    </div>
-
-                    <div>
-                      <label className={labelCls}>Case Study Summary</label>
-                      <textarea
-                        rows={2}
-                        className={inputCls}
-                        value={proj.summary}
-                        onChange={(e) =>
-                          update((p) => {
-                            const next = [...p.projects];
-                            next[idx] = { ...next[idx], summary: e.target.value };
-                            return { ...p, projects: next };
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                      <div>
-                        <label className={labelCls}>
-                          Tech Stack (comma separated)
-                        </label>
-                        <input
-                          className={inputCls}
-                          value={proj.stack.join(", ")}
-                          onChange={(e) =>
-                            update((p) => {
-                              const next = [...p.projects];
-                              next[idx] = {
-                                ...next[idx],
-                                stack: e.target.value
-                                  .split(",")
-                                  .map((s) => s.trim())
-                                  .filter(Boolean),
-                              };
-                              return { ...p, projects: next };
-                            })
-                          }
-                        />
-                      </div>
                       <div>
                         <label className={labelCls}>Folder Sheet Headline</label>
                         <input
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.previewHeadline}
                           onChange={(e) =>
@@ -1901,12 +1883,120 @@ export default function AdminDashboard({
                           }
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Case Study Summary</label>
+                      <textarea
+                        rows={2}
+                        suppressHydrationWarning
+                        className={inputCls}
+                        value={proj.summary}
+                        onChange={(e) =>
+                          update((p) => {
+                            const next = [...p.projects];
+                            next[idx] = { ...next[idx], summary: e.target.value };
+                            return { ...p, projects: next };
+                          })
+                        }
+                      />
+                    </div>
+
+                    {/* Interactive Tech Stack Chips */}
+                    <div>
+                      <label className={labelCls}>Tech Stack Tags</label>
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {proj.stack.map((tech, tIdx) => (
+                          <span
+                            key={`${tech}-${tIdx}`}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-black/12 bg-white px-3 py-1 text-xs font-medium text-neutral-800"
+                          >
+                            <span>{tech}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                update((p) => {
+                                  const next = [...p.projects];
+                                  next[idx] = {
+                                    ...next[idx],
+                                    stack: next[idx].stack.filter(
+                                      (_, i) => i !== tIdx
+                                    ),
+                                  };
+                                  return { ...p, projects: next };
+                                })
+                              }
+                              className="text-neutral-400 hover:text-red-600 cursor-pointer"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          suppressHydrationWarning
+                          className={inputCls}
+                          placeholder="Add tech tag (e.g. FastAPI, PostGIS)..."
+                          value={newProjectTech[idx] ?? ""}
+                          onChange={(e) =>
+                            setNewProjectTech((prev) => ({
+                              ...prev,
+                              [idx]: e.target.value,
+                            }))
+                          }
+                          onKeyDown={(e) => {
+                            const val = (newProjectTech[idx] ?? "").trim();
+                            if (e.key === "Enter" && val) {
+                              e.preventDefault();
+                              update((p) => {
+                                const next = [...p.projects];
+                                next[idx] = {
+                                  ...next[idx],
+                                  stack: [...next[idx].stack, val],
+                                };
+                                return { ...p, projects: next };
+                              });
+                              setNewProjectTech((prev) => ({
+                                ...prev,
+                                [idx]: "",
+                              }));
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = (newProjectTech[idx] ?? "").trim();
+                            if (!val) return;
+                            update((p) => {
+                              const next = [...p.projects];
+                              next[idx] = {
+                                ...next[idx],
+                                stack: [...next[idx].stack, val],
+                              };
+                              return { ...p, projects: next };
+                            });
+                            setNewProjectTech((prev) => ({
+                              ...prev,
+                              [idx]: "",
+                            }));
+                          }}
+                          className="shrink-0 rounded-xl bg-[#0A0A0A] px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-800 cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                       <div>
                         <label className={labelCls}>
                           Key Impact Bullets (one per line)
                         </label>
                         <textarea
                           rows={3}
+                          suppressHydrationWarning
                           className={inputCls}
                           value={proj.impact.join("\n")}
                           onChange={(e) =>
@@ -1927,6 +2017,7 @@ export default function AdminDashboard({
                         </label>
                         <textarea
                           rows={3}
+                          suppressHydrationWarning
                           className={`${inputCls} font-mono text-xs`}
                           value={proj.previewSnippet.join("\n")}
                           onChange={(e) =>
