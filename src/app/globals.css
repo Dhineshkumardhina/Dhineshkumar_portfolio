@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --surface-2: #121212;
+    --border: rgba(255, 255, 255, 0.12);
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+  }
+
+  html {
+    background-color: #fafafa;
+    color: #0a0a0a;
+    color-scheme: light dark;
+  }
+
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  body {
+    background-color: #fafafa;
+    color: #0a0a0a;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: #171717;
+    color: #ffffff;
+  }
+}
+
+/* Custom sleek light editorial scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4c4c8;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0a0a0a;
+}
+
+/* 3D perspective helpers for folder cards & hero portrait flip */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.perspective-1200 {
+  perspective: 1200px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Subtle breathing idle animation for center crowd figure */
+@keyframes heroBreathe {
+  0%, 100% {
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    transform: translateY(-2px) scaleY(1.008);
+  }
+}
+
+.animate-hero-breathe {
+  animation: heroBreathe 3.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
