@@ -1,110 +1,116 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { usePortfolio } from "@/context/PortfolioContext";
 
 /**
- * Ultra-fast White-Gallery Editorial Preloader (~0.68s total):
- * Plays once per browser session so repeat loads are 0ms instant,
- * and reveals the Hero rapidly without blocking perceived load speed.
+ * Cinema-smooth GPU-composited White-Gallery Preloader:
+ * - Single unified layer (no twin-curtain center seam flicker)
+ * - Waits for hydration + font readiness (capped fast) before lifting
+ * - Unmounts cleanly via onAnimationComplete (never cuts off mid-frame)
  */
 export default function Preloader() {
   const portfolio = usePortfolio();
-  const [phase, setPhase] = useState<"intro" | "reveal" | "done">("intro");
+  const [stage, setStage] = useState<"loading" | "lifting" | "done">("loading");
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("dhina_intro_seen") === "1") {
-        setPhase("done");
-        return;
-      }
-      sessionStorage.setItem("dhina_intro_seen", "1");
-    } catch {
-      // Ignore storage restrictions
-    }
+    let cancelled = false;
+    let raf1 = 0;
+    let raf2 = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const t1 = setTimeout(() => setPhase("reveal"), 320);
-    const t2 = setTimeout(() => setPhase("done"), 780);
+    const startLift = () => {
+      if (cancelled) return;
+      setStage("lifting");
+    };
+
+    // Wait 2 animation frames so initial layout & styles are painted smoothly,
+    // then race document.fonts.ready against a tight 420ms ceiling.
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        const minHold = new Promise<void>((res) => setTimeout(res, 380));
+        const fontsReady =
+          typeof document !== "undefined" && "fonts" in document
+            ? Promise.race([
+                document.fonts.ready.then(() => undefined),
+                new Promise<void>((res) => setTimeout(res, 420)),
+              ])
+            : Promise.resolve();
+
+        Promise.all([minHold, fontsReady]).then(() => {
+          if (!cancelled) startLift();
+        });
+      });
+    });
+
+    // Hard safety fallback so preloader can never get stuck
+    timer = setTimeout(startLift, 1100);
+
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
+  if (stage === "done") return null;
+
   return (
-    <AnimatePresence>
-      {phase !== "done" && (
-        <motion.div
-          key="gallery-preloader"
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.16 }}
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-0 z-[100] overflow-hidden"
-        >
-          {/* Twin Crisp White Curtain Halves */}
+    <motion.div
+      aria-hidden="true"
+      initial={{ y: "0%", opacity: 1 }}
+      animate={
+        stage === "lifting"
+          ? { y: "-100%", opacity: 1 }
+          : { y: "0%", opacity: 1 }
+      }
+      transition={{
+        duration: 0.62,
+        ease: [0.76, 0, 0.24, 1],
+      }}
+      onAnimationComplete={() => {
+        if (stage === "lifting") {
+          setStage("done");
+        }
+      }}
+      style={{ willChange: "transform" }}
+      className="pointer-events-none fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#FAFAFA] shadow-[0_20px_60px_rgba(0,0,0,0.06)]"
+    >
+      <motion.div
+        animate={
+          stage === "lifting"
+            ? { opacity: 0, y: -18, scale: 0.98 }
+            : { opacity: 1, y: 0, scale: 1 }
+        }
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform, opacity" }}
+        className="flex flex-col items-center"
+      >
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span className="font-[family-name:var(--font-mono)] text-2xl font-light text-neutral-400 sm:text-4xl">
+            &lt;
+          </span>
+          <span className="block font-[family-name:var(--font-display)] text-3xl font-bold tracking-[-0.04em] text-[#0A0A0A] sm:text-5xl">
+            {portfolio.brandMark}
+          </span>
+          <span className="font-[family-name:var(--font-mono)] text-2xl font-light text-neutral-400 sm:text-4xl">
+            /&gt;
+          </span>
+        </div>
+
+        {/* Silky GPU-scaled hairline progress bar */}
+        <div className="mt-4 h-[2px] w-36 overflow-hidden rounded-full bg-black/10 sm:w-44">
           <motion.div
-            initial={{ x: "0%" }}
-            animate={{ x: phase === "reveal" ? "-100%" : "0%" }}
-            transition={{ duration: 0.44, ease: [0.76, 0, 0.24, 1] }}
-            className="absolute inset-y-0 left-0 w-1/2 border-r border-black/[0.06] bg-[#FAFAFA]"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            style={{ transformOrigin: "0% 50%", willChange: "transform" }}
+            className="h-full w-full bg-[#0A0A0A]"
           />
-          <motion.div
-            initial={{ x: "0%" }}
-            animate={{ x: phase === "reveal" ? "100%" : "0%" }}
-            transition={{ duration: 0.44, ease: [0.76, 0, 0.24, 1] }}
-            className="absolute inset-y-0 right-0 w-1/2 border-l border-black/[0.06] bg-[#FAFAFA]"
-          />
-
-          {/* Center Kinetic `< Dhina />` Signature */}
-          <motion.div
-            initial={{ opacity: 1, scale: 1 }}
-            animate={
-              phase === "reveal"
-                ? { opacity: 0, scale: 0.96 }
-                : { opacity: 1, scale: 1 }
-            }
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 flex h-full w-full flex-col items-center justify-center"
-          >
-            <div className="flex items-center gap-3 sm:gap-4">
-              <motion.span
-                initial={{ x: 12, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-                className="font-[family-name:var(--font-mono)] text-2xl font-light text-neutral-400 sm:text-4xl"
-              >
-                &lt;
-              </motion.span>
-
-              <motion.span
-                initial={{ y: 12, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                className="block font-[family-name:var(--font-display)] text-3xl font-bold tracking-[-0.04em] text-[#0A0A0A] sm:text-5xl"
-              >
-                {portfolio.brandMark}
-              </motion.span>
-
-              <motion.span
-                initial={{ x: -12, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-                className="font-[family-name:var(--font-mono)] text-2xl font-light text-neutral-400 sm:text-4xl"
-              >
-                /&gt;
-              </motion.span>
-            </div>
-
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-3 h-[1.5px] w-32 bg-[#0A0A0A] sm:w-40"
-            />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

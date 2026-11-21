@@ -51,26 +51,33 @@ function HeroFieldCanvas() {
     }
 
     let dashes: Dash[] = [];
+    let cachedRect = { left: 0, top: 0 };
+
+    const updateRect = () => {
+      const r = canvas.getBoundingClientRect();
+      cachedRect = { left: r.left, top: r.top };
+    };
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       width = canvas.clientWidth;
       height = canvas.clientHeight;
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      updateRect();
 
-      const rowGap = 22;
+      const rowGap = 24;
       const rows = Math.ceil(height / rowGap);
       dashes = [];
       for (let r = 0; r < rows; r++) {
-        const count = 4 + Math.floor(Math.random() * 4);
+        const count = 4 + Math.floor(Math.random() * 3);
         for (let i = 0; i < count; i++) {
           dashes.push({
             x: Math.random() * width,
             y: r * rowGap + (Math.random() - 0.5) * 4,
             len: 18 + Math.random() * 68,
-            speed: (0.16 + Math.random() * 0.38) * (r % 2 === 0 ? 1 : -1),
+            speed: (0.16 + Math.random() * 0.36) * (r % 2 === 0 ? 1 : -1),
             baseAlpha: 0.04 + Math.random() * 0.065,
             phase: Math.random() * Math.PI * 2,
             hasDot: Math.random() > 0.72,
@@ -80,9 +87,8 @@ function HeroFieldCanvas() {
     };
 
     const onPointerMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const nx = e.clientX - rect.left;
-      const ny = e.clientY - rect.top;
+      const nx = e.clientX - cachedRect.left;
+      const ny = e.clientY - cachedRect.top;
       if (!targetMouse.active) {
         smoothMouse.x = nx;
         smoothMouse.y = ny;
@@ -99,22 +105,17 @@ function HeroFieldCanvas() {
 
     resize();
     window.addEventListener("resize", resize);
+    window.addEventListener("scroll", updateRect, { passive: true });
     window.addEventListener("mousemove", onPointerMove, { passive: true });
     document.addEventListener("mouseleave", onPointerLeave);
 
     let time = 0;
     let inView = true;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        inView = entry.isIntersecting;
-      },
-      { rootMargin: "150px" }
-    );
-    observer.observe(canvas);
+    let running = false;
 
     const render = () => {
       if (!inView) {
-        rafId = requestAnimationFrame(render);
+        running = false;
         return;
       }
       time += 0.016;
@@ -189,12 +190,34 @@ function HeroFieldCanvas() {
       rafId = requestAnimationFrame(render);
     };
 
-    rafId = requestAnimationFrame(render);
+    const startLoop = () => {
+      if (!running) {
+        running = true;
+        rafId = requestAnimationFrame(render);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView) {
+          updateRect();
+          startLoop();
+        } else if (running) {
+          cancelAnimationFrame(rafId);
+          running = false;
+        }
+      },
+      { rootMargin: "150px" }
+    );
+    observer.observe(canvas);
+    startLoop();
 
     return () => {
       cancelAnimationFrame(rafId);
       observer.disconnect();
       window.removeEventListener("resize", resize);
+      window.removeEventListener("scroll", updateRect);
       window.removeEventListener("mousemove", onPointerMove);
       document.removeEventListener("mouseleave", onPointerLeave);
     };
@@ -221,13 +244,14 @@ function AnimatedWord({
       {text.split("").map((char, idx) => (
         <motion.span
           key={`${char}-${idx}`}
-          initial={{ y: "110%", opacity: 0, rotateX: -35 }}
-          animate={{ y: "0%", opacity: 1, rotateX: 0 }}
+          initial={{ y: "105%", opacity: 0 }}
+          animate={{ y: "0%", opacity: 1 }}
           transition={{
-            duration: 0.7,
-            delay: delayOffset + idx * 0.03,
+            duration: 0.62,
+            delay: delayOffset + idx * 0.025,
             ease: [0.22, 1, 0.36, 1],
           }}
+          style={{ willChange: "transform, opacity" }}
           className="inline-block"
         >
           {char}
@@ -631,11 +655,11 @@ export default function HeroAboutStage() {
       {/* Desktop Scroll-Linked + Silky Harmonic 360° Rotatable Portrait Centerpiece */}
       <div className="pointer-events-none sticky top-0 z-20 hidden h-screen w-full items-center justify-center lg:flex">
         <div className="perspective-1200">
-          {/* Layer 0: Smooth entrance */}
+          {/* Layer 0: Smooth entrance synced with Preloader lift */}
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.88 }}
+            initial={{ opacity: 0, y: 28, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.95, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.85, delay: 0.44, ease: [0.22, 1, 0.36, 1] }}
             className="preserve-3d relative"
           >
             {/* Layer 1: Scroll-linked position, scale & 3D horizon turn */}
@@ -791,24 +815,24 @@ export default function HeroAboutStage() {
                 className="block whitespace-nowrap"
               >
                 <motion.span
-                  initial={{ opacity: 0, x: -24 }}
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.65, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="mr-1.5 inline-block font-[family-name:var(--font-mono)] font-light text-neutral-400 sm:mr-3"
                 >
                   &lt;
                 </motion.span>
-                <AnimatedWord text={portfolio.heroLine1} delayOffset={0.08} />
+                <AnimatedWord text={portfolio.heroLine1} delayOffset={0.42} />
               </motion.span>
               <motion.span
                 style={{ x: line2ScrollX, willChange: "transform" }}
                 className="block whitespace-nowrap"
               >
-                <AnimatedWord text={portfolio.heroLine2} delayOffset={0.22} />
+                <AnimatedWord text={portfolio.heroLine2} delayOffset={0.54} />
                 <motion.span
-                  initial={{ opacity: 0, x: 24 }}
+                  initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.7, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.65, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
                   className="ml-1.5 inline-block font-[family-name:var(--font-mono)] font-light text-neutral-400 sm:ml-3"
                 >
                   /&gt;
@@ -818,9 +842,9 @@ export default function HeroAboutStage() {
 
             {/* Crisp Editorial Subtitle Line */}
             <motion.p
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, delay: 0.36, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.6, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
               className="mt-4 max-w-2xl text-xs font-medium tracking-wide text-neutral-500 sm:text-sm"
             >
               <span className="font-semibold text-black">{portfolio.fullName}</span>

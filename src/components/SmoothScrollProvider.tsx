@@ -9,12 +9,16 @@ export default function SmoothScrollProvider({
   children: ReactNode;
 }) {
   useEffect(() => {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (prefersReduced) return;
+
     const lenis = new Lenis({
-      lerp: 0.075,
-      duration: 1.25,
+      lerp: 0.1,
       smoothWheel: true,
-      wheelMultiplier: 0.92,
-      touchMultiplier: 1.45,
+      wheelMultiplier: 1,
+      syncTouch: false,
     });
 
     (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
@@ -34,7 +38,7 @@ export default function SmoothScrollProvider({
         const el = document.querySelector(href);
         if (el) {
           e.preventDefault();
-          lenis.scrollTo(el as HTMLElement, { offset: 0, duration: 1.25 });
+          lenis.scrollTo(el as HTMLElement, { offset: 0, duration: 1.05 });
         }
       }
     };
