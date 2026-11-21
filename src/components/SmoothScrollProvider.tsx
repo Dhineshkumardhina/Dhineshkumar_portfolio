@@ -15,9 +15,9 @@ export default function SmoothScrollProvider({
     if (prefersReduced) return;
 
     const lenis = new Lenis({
-      lerp: 0.1,
+      lerp: 0.14,
       smoothWheel: true,
-      wheelMultiplier: 1,
+      wheelMultiplier: 0.95,
       syncTouch: false,
     });
 
@@ -38,7 +38,7 @@ export default function SmoothScrollProvider({
         const el = document.querySelector(href);
         if (el) {
           e.preventDefault();
-          lenis.scrollTo(el as HTMLElement, { offset: 0, duration: 1.05 });
+          lenis.scrollTo(el as HTMLElement, { offset: 0, duration: 0.95 });
         }
       }
     };

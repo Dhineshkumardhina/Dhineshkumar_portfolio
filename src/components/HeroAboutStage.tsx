@@ -234,29 +234,13 @@ function HeroFieldCanvas() {
 
 function AnimatedWord({
   text,
-  delayOffset = 0,
 }: {
   text: string;
   delayOffset?: number;
 }) {
   return (
-    <span className="inline-flex overflow-hidden py-1 align-bottom">
-      {text.split("").map((char, idx) => (
-        <motion.span
-          key={`${char}-${idx}`}
-          initial={{ y: "105%", opacity: 0 }}
-          animate={{ y: "0%", opacity: 1 }}
-          transition={{
-            duration: 0.62,
-            delay: delayOffset + idx * 0.025,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          style={{ willChange: "transform, opacity" }}
-          className="inline-block"
-        >
-          {char}
-        </motion.span>
-      ))}
+    <span className="inline-flex py-1 align-bottom">
+      <span>{text}</span>
     </span>
   );
 }
@@ -655,13 +639,8 @@ export default function HeroAboutStage() {
       {/* Desktop Scroll-Linked + Silky Harmonic 360° Rotatable Portrait Centerpiece */}
       <div className="pointer-events-none sticky top-0 z-20 hidden h-screen w-full items-center justify-center lg:flex">
         <div className="perspective-1200">
-          {/* Layer 0: Smooth entrance synced with Preloader lift */}
-          <motion.div
-            initial={{ opacity: 0, y: 28, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.85, delay: 0.44, ease: [0.22, 1, 0.36, 1] }}
-            className="preserve-3d relative"
-          >
+          {/* Layer 0: Clean ready centerpiece (no secondary post-loader jump) */}
+          <div className="preserve-3d relative">
             {/* Layer 1: Scroll-linked position, scale & 3D horizon turn */}
             <motion.div
               style={{
@@ -781,7 +760,7 @@ export default function HeroAboutStage() {
                 </motion.div>
               </motion.div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -814,43 +793,28 @@ export default function HeroAboutStage() {
                 style={{ x: line1ScrollX, willChange: "transform" }}
                 className="block whitespace-nowrap"
               >
-                <motion.span
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.65, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                  className="mr-1.5 inline-block font-[family-name:var(--font-mono)] font-light text-neutral-400 sm:mr-3"
-                >
+                <span className="mr-1.5 inline-block font-[family-name:var(--font-mono)] font-light text-neutral-400 sm:mr-3">
                   &lt;
-                </motion.span>
-                <AnimatedWord text={portfolio.heroLine1} delayOffset={0.42} />
+                </span>
+                <AnimatedWord text={portfolio.heroLine1} />
               </motion.span>
               <motion.span
                 style={{ x: line2ScrollX, willChange: "transform" }}
                 className="block whitespace-nowrap"
               >
-                <AnimatedWord text={portfolio.heroLine2} delayOffset={0.54} />
-                <motion.span
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.65, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
-                  className="ml-1.5 inline-block font-[family-name:var(--font-mono)] font-light text-neutral-400 sm:ml-3"
-                >
+                <AnimatedWord text={portfolio.heroLine2} />
+                <span className="ml-1.5 inline-block font-[family-name:var(--font-mono)] font-light text-neutral-400 sm:ml-3">
                   /&gt;
-                </motion.span>
+                </span>
               </motion.span>
             </h1>
 
             {/* Crisp Editorial Subtitle Line */}
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-4 max-w-2xl text-xs font-medium tracking-wide text-neutral-500 sm:text-sm"
-            >
+            <p className="mt-4 max-w-2xl text-xs font-medium tracking-wide text-neutral-500 sm:text-sm">
               <span className="font-semibold text-black">{portfolio.fullName}</span>
               <span className="mx-2 text-neutral-300">—</span>
               <span>{portfolio.roleTitle}</span>
-            </motion.p>
+            </p>
 
             {/* Mobile Interactive 360° Rotatable Portrait */}
             <motion.div
