@@ -83,14 +83,15 @@ export default function Preloader() {
         }
       }}
       style={{ willChange: "transform, opacity" }}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A0A0A] text-white select-none"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#FAFAFA] text-[#0A0A0A] select-none"
     >
-      {/* Subtle radial spotlight behind center mark */}
+      {/* Subtle architectural dot texture matching the portfolio */}
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 opacity-45"
         style={{
-          background:
-            "radial-gradient(480px circle at 50% 50%, rgba(255,255,255,0.06), transparent 70%)",
+          backgroundImage:
+            "radial-gradient(rgba(0,0,0,0.09) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
         }}
       />
 
@@ -105,33 +106,33 @@ export default function Preloader() {
       >
         {/* Crisp Brand Signature */}
         <div className="flex items-center gap-3">
-          <span className="font-[family-name:var(--font-mono)] text-xl font-light text-neutral-500 sm:text-2xl">
+          <span className="font-[family-name:var(--font-mono)] text-xl font-light text-neutral-400 sm:text-2xl">
             &lt;
           </span>
-          <span className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">
+          <span className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-[-0.04em] text-[#0A0A0A] sm:text-4xl">
             {portfolio.brandMark}
           </span>
-          <span className="font-[family-name:var(--font-mono)] text-xl font-light text-neutral-500 sm:text-2xl">
+          <span className="font-[family-name:var(--font-mono)] text-xl font-light text-neutral-400 sm:text-2xl">
             /&gt;
           </span>
         </div>
 
         {/* Synchronized Hairline Progress Track */}
-        <div className="mt-6 h-[2px] w-full overflow-hidden rounded-full bg-white/12">
+        <div className="mt-6 h-[2px] w-full overflow-hidden rounded-full bg-black/10">
           <div
             style={{
               transform: `scaleX(${percent / 100})`,
               transformOrigin: "0% 50%",
               willChange: "transform",
             }}
-            className="h-full w-full bg-white"
+            className="h-full w-full bg-[#0A0A0A]"
           />
         </div>
 
         {/* Tabular Percentage + Year Row */}
-        <div className="mt-3 flex w-full items-center justify-between font-[family-name:var(--font-mono)] text-[10px] tracking-[0.2em] text-neutral-400 uppercase">
+        <div className="mt-3 flex w-full items-center justify-between font-[family-name:var(--font-mono)] text-[10px] tracking-[0.2em] text-neutral-500 uppercase">
           <span>PORTFOLIO {portfolio.year}</span>
-          <span className="font-semibold text-white tabular-nums">
+          <span className="font-semibold text-[#0A0A0A] tabular-nums">
             {String(percent).padStart(2, "0")}%
           </span>
         </div>
