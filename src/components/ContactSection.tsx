@@ -324,28 +324,23 @@ export default function ContactSection() {
             />
 
             <div className="relative z-10">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs font-medium text-emerald-400">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                Available for work
-              </span>
-
-              <h3 className="mt-6 font-[family-name:var(--font-display)] text-3xl font-bold leading-tight tracking-[-0.03em] text-white">
+              <h3 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-[-0.035em] text-white sm:text-5xl">
                 Send a message.
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-400">
+              <p className="mt-5 text-base leading-relaxed text-neutral-300 sm:text-lg">
                 Have a role, freelance project, or idea in mind? Fill out the
                 form and it goes straight to my inbox.
               </p>
             </div>
 
-            <div className="relative z-10 mt-10 space-y-4 border-t border-white/12 pt-6 text-sm">
+            <div className="relative z-10 mt-12 space-y-5 border-t border-white/12 pt-7">
               <div>
-                <span className="block font-[family-name:var(--font-mono)] text-[10px] tracking-[0.16em] text-neutral-500 uppercase">
+                <span className="block font-[family-name:var(--font-mono)] text-[11px] tracking-[0.16em] text-neutral-500 uppercase">
                   Email
                 </span>
                 <a
                   href={`mailto:${portfolio.email}`}
-                  className="mt-1 inline-block break-all font-medium text-white transition-opacity hover:opacity-80"
+                  className="mt-1.5 inline-block break-all text-base font-semibold text-white transition-opacity hover:opacity-80"
                 >
                   {portfolio.email}
                 </a>
@@ -353,18 +348,18 @@ export default function ContactSection() {
 
               <div className="grid grid-cols-2 gap-4 pt-1">
                 <div>
-                  <span className="block font-[family-name:var(--font-mono)] text-[10px] tracking-[0.16em] text-neutral-500 uppercase">
+                  <span className="block font-[family-name:var(--font-mono)] text-[11px] tracking-[0.16em] text-neutral-500 uppercase">
                     Response Time
                   </span>
-                  <span className="mt-1 block text-xs font-medium text-neutral-200">
+                  <span className="mt-1.5 block text-sm font-medium text-neutral-200">
                     {portfolio.replyTimeNote}
                   </span>
                 </div>
                 <div>
-                  <span className="block font-[family-name:var(--font-mono)] text-[10px] tracking-[0.16em] text-neutral-500 uppercase">
+                  <span className="block font-[family-name:var(--font-mono)] text-[11px] tracking-[0.16em] text-neutral-500 uppercase">
                     Location
                   </span>
-                  <span className="mt-1 block text-xs font-medium text-neutral-200">
+                  <span className="mt-1.5 block text-sm font-medium text-neutral-200">
                     {portfolio.currentlyAt.location}
                   </span>
                 </div>
